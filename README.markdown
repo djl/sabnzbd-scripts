@@ -1,4 +1,4 @@
 sabnzbd-scripts
 ---------------
 
-Some custom SABNzbd post-processing scripts.
+Some custom SABnzbd post-processing scripts.
