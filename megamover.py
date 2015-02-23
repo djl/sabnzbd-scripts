@@ -100,13 +100,22 @@ def get_unique_filename(fn):
 
 
 def mkdirp(path, mode=0755):
-    try:
-        os.makedirs(path, mode=mode)
-    except OSError as exc:
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
+    if not path.endswith(os.path.sep):
+        path = path + os.path.sep
+
+    paths = []
+    while path:
+        path = path.rsplit(os.path.sep, 1)[0]
+        if not path:
+            continue
+        if not os.path.exists(path):
+            paths.append(path)
+
+    paths.reverse()
+
+    for path in paths:
+        os.mkdir(path, mode)
+        os.chmod(path, mode)
 
 
 def main(job_dir, job_name, category):
