@@ -133,7 +133,15 @@ def main(job_dir, job_name, category):
         config = fmt(CONFIG_FILE, info)
 
         try:
-            dest = os.path.join(config.get('categories', category))
+            category_types = config.get('types', category).split()
+        except configparser.nosectionerror, configparser.NoOptionError:
+            category_types = []
+
+        if category_types and category not in category_types:
+            fail("Media type '%s' does not match expected category '%s'" % (info['type'], category))
+
+        try:
+            dest = config.get('categories', category)
         except configparser.NoSectionError, configparser.NoOptionError:
             fail("No config for category: %s" % category)
 
