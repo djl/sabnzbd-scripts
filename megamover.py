@@ -130,15 +130,20 @@ def main(job_dir, job_name, category):
         fn_job = "%s.%s" % (job_name, os.path.splitext(fn)[-1])
         info = guess_file_info(os.path.basename(fn_job))
 
-        config = fmt(CONFIG_FILE, info)
+        # Parse the config file once so we can grab the category ->
+        # guessit mappings
+        config = fmt(CONFIG_FILE, {})
 
         try:
-            category_types = config.get('types', category).split()
-        except configparser.nosectionerror, configparser.NoOptionError:
-            category_types = []
+            category_type = config.get('types', category)
+        except configparser.NoSectionError, configparser.NoOptionError:
+            category_type = None
 
-        if category_types and category not in category_types:
-            fail("Media type '%s' does not match expected category '%s'" % (info['type'], category))
+        # Parse the config a second time with the correct info
+        # TODO split the category/types config into seperate files so this only
+        # guess_file_info only needs to be called once
+        info = guess_file_info(os.path.basename(fn_job), type=category_type)
+        config = fmt(CONFIG_FILE, info)
 
         try:
             dest = config.get('categories', category)
