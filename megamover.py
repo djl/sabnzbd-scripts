@@ -87,7 +87,7 @@ def get_suitable_files(dirname):
 
 
 def get_unique_filename(fn):
-    if not os.path.isfile(fn):
+    if not os.path.exists(fn):
         return fn
 
     name, ext = os.path.splitext(fn)
