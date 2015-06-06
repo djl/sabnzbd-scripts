@@ -140,7 +140,7 @@ def main(job_dir, job_name, category):
             category_type = None
 
         # Parse the config a second time with the correct info
-        # TODO split the category/types config into seperate files so this only
+        # TODO split the category/types config into seperate files so
         # guess_file_info only needs to be called once
         info = guess_file_info(os.path.basename(fn_job), type=category_type)
         config = fmt(CONFIG_FILE, info)
