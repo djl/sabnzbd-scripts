@@ -139,10 +139,16 @@ def main(job_dir, job_name, category):
         except configparser.NoSectionError, configparser.NoOptionError:
             category_type = None
 
+        try:
+            guessit_config = dict(config.items('guessit'))
+        except configparser.NoSectionError:
+            guessit_config = {}
+
         # Parse the config a second time with the correct info
         # TODO split the category/types config into seperate files so
         # guess_file_info only needs to be called once
-        info = guess_file_info(os.path.basename(fn_job), type=category_type)
+        info = guess_file_info(os.path.basename(fn_job), type=category_type,
+                               **guessit_config)
         config = fmt(CONFIG_FILE, info)
 
         try:
