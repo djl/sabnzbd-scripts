@@ -19,7 +19,7 @@ from guessit import guess_file_info
 from jinja2 import Template
 
 
-CONFIG_FILE = '/etc/megamover.conf'
+CONFIG_FILE = '/etc/guessit-renamer.conf'
 MOVIE_EXTENSIONS = ['mkv', 'avi', 'm4v', 'mp4']
 SUB_EXTENSIONS = ['idx', 'sub', 'srt']
 EXTENSIONS = MOVIE_EXTENSIONS + SUB_EXTENSIONS
