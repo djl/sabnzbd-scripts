@@ -101,11 +101,11 @@ def main():
     for fn in files:
         prefix = os.path.commonprefix([src, fn])
         unprefixed = fn.split(prefix)[-1].lstrip('/')
-        dest = get_unique_filename(os.path.join(dest, unprefixed))
+        final = get_unique_filename(os.path.join(dest, unprefixed))
         if not options.dry_run:
-            mkdirp(os.path.dirname(dest))
-            shutil.move(fn, dest)
-        echo("New file: %s (%s)" % (dest, unprefixed), options.dry_run)
+            mkdirp(os.path.dirname(final))
+            shutil.move(fn, final)
+        echo("New file: %s (%s)" % (final, unprefixed), options.dry_run)
 
     if not options.empty:
         return
