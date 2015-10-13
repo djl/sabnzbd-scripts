@@ -5,7 +5,7 @@ Usage: dirmerge.py <options> SRC DEST
 Options:
   -n          perform a trial run with no changes made
   -d          delete any empty directories from SRC after merging
-  -q          supress non-error messages
+  -q          suppress non-error messages
   -h          show this message and exit
 """
 import errno
