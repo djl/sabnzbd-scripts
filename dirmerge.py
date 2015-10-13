@@ -7,6 +7,7 @@ Options:
   -d          delete any empty directories from SRC after merging
   -h          show this message and exit
 """
+import errno
 import optparse
 import os
 import shutil
@@ -63,6 +64,16 @@ def get_unique_filename(fn):
         count += 1
 
 
+def mkdirp(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
 def main():
     parser = optparse.OptionParser()
     parser.remove_option('--help')
@@ -92,6 +103,7 @@ def main():
         unprefixed = fn.split(prefix)[-1].lstrip('/')
         dest = get_unique_filename(os.path.join(dest, unprefixed))
         if not options.dry_run:
+            mkdirp(os.path.dirname(dest))
             shutil.move(fn, dest)
         echo("New file: %s (%s)" % (dest, unprefixed), options.dry_run)
 
