@@ -10,8 +10,9 @@ import sys
 
 def echo(msg='', dry_run=False):
     if dry_run:
-        msg = '[DRY RUN] ' + msg
-    sys.stdout.write(msg + '\n')
+        msg = '[DRY RUN] {0}'.format(msg)
+    msg = '{0}\n'.format(msg).decode('utf-8', 'replace')
+    sys.stdout.write(msg)
     sys.stdout.flush()
 
 

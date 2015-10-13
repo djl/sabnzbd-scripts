@@ -26,12 +26,14 @@ EXTENSIONS = MOVIE_EXTENSIONS + SUB_EXTENSIONS
 
 
 def echo(msg=''):
-    sys.stdout.write(msg + '\n')
+    msg = '{0}\n'.format(msg).decode('utf-8', 'replace')
+    sys.stdout.write(msg)
     sys.stdout.flush()
 
 
 def fail(msg):
-    sys.stderr.write(msg + '\n')
+    msg = '{0}\n'.format(msg).decode('utf-8', 'replace')
+    sys.stderr.write(msg)
     sys.stderr.flush()
     sys.exit(1)
 
