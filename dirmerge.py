@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 """
-Usage: dirmerge.py [-n] SRC DEST
+Usage: dirmerge.py <options> SRC DEST
+
+Options:
+  -n          perform a trial run with no changes made
+  -d          delete any empty directories from SRC after merging
+  -h          show this message and exit
 """
 import optparse
 import os
@@ -61,8 +66,9 @@ def get_unique_filename(fn):
 def main():
     parser = optparse.OptionParser()
     parser.remove_option('--help')
-    parser.add_option('-h', '--help', action='callback', callback=usage)
-    parser.add_option('-n', '--dry-run', action='store_true', dest='dry_run')
+    parser.add_option('-h', action='callback', callback=usage)
+    parser.add_option('-n', action='store_true', dest='dry_run')
+    parser.add_option('-d', action='store_true', dest='empty')
     options, args = parser.parse_args()
 
     try:
@@ -85,6 +91,9 @@ def main():
         if not options.dry_run:
             shutil.move(fn, dest)
         echo("New file: %s (%s)" % (dest, unprefixed), options.dry_run)
+
+    if not options.empty:
+        return
 
     empty = find_empty_dirs(src)
     if not empty:
