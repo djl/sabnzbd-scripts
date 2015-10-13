@@ -76,6 +76,9 @@ def main():
     except ValueError:
         usage()
 
+    src = os.path.abspath(src)
+    dest = os.path.abspath(dest)
+
     # Just exit quietly if src or dest isn't a directory
     if not all([os.path.isdir(src), os.path.isdir(dest)]):
         return
