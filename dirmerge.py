@@ -5,6 +5,7 @@ Usage: dirmerge.py <options> SRC DEST
 Options:
   -n          perform a trial run with no changes made
   -d          delete any empty directories from SRC after merging
+  -q          supress non-error messages
   -h          show this message and exit
 """
 import errno
@@ -80,6 +81,7 @@ def main():
     parser.add_option('-h', action='callback', callback=usage)
     parser.add_option('-n', action='store_true', dest='dry_run')
     parser.add_option('-d', action='store_true', dest='empty')
+    parser.add_option('-q', action='store_true', dest='quiet')
     options, args = parser.parse_args()
 
     try:
@@ -105,20 +107,22 @@ def main():
         if not options.dry_run:
             mkdirp(os.path.dirname(final))
             shutil.move(fn, final)
-        echo("New file: %s (%s)" % (final, unprefixed), options.dry_run)
+        if not options.quiet:
+            echo("New file: %s (%s)" % (final, unprefixed), options.dry_run)
 
     if not options.empty:
         return
 
     empty = find_empty_dirs(src)
-    if not empty:
+    if not empty and not options.quiet:
         echo("Skipped non-empty directory: %s" % src, options.dry_run)
         return
 
     for e in empty:
         if not options.dry_run:
             os.rmdir(e)
-    echo("Removed empty directory: %s" % src, options.dry_run)
+    if not options.quiet:
+        echo("Removed empty directory: %s" % src, options.dry_run)
 
 
 if __name__ == '__main__':
