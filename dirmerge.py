@@ -112,11 +112,13 @@ def main():
     if not all([os.path.isdir(src), os.path.isdir(dest)]):
         return
 
-    patterns = []
-    try:
-        patterns = open(options.patterns_file).readlines()
-    except IOError:
-        fail("Could not read file '%s'" % options.patterns_file)
+    if options.patterns_file:
+        try:
+            patterns = open(options.patterns_file).readlines()
+        except IOError:
+            fail("Could not read file '%s'" % options.patterns_file)
+    else:
+        patterns = []
 
     files = get_files(src, patterns)
     if not files:
