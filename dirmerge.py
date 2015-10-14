@@ -5,12 +5,14 @@ Usage: dirmerge.py <options> SRC DEST
 Options:
   -n          perform a trial run with no changes made
   -d          delete any empty directories from SRC after merging
+  -e FILE     read exclude regular expressions from FILE
   -q          suppress non-error messages
   -h          show this message and exit
 """
 import errno
 import optparse
 import os
+import re
 import shutil
 import sys
 
@@ -21,6 +23,13 @@ def echo(msg='', dry_run=False):
     msg = '{0}\n'.format(msg).decode('utf-8', 'replace')
     sys.stdout.write(msg)
     sys.stdout.flush()
+
+
+def fail(msg=''):
+    msg = '{0}\n'.format(msg).decode('utf-8', 'replace')
+    sys.stderr.write(msg)
+    sys.stderr.flush()
+    sys.exit(1)
 
 
 def usage():
@@ -43,12 +52,18 @@ def find_empty_dirs(root_dir='.', recursive=True):
             yield root
 
 
-def get_files(dirname):
+def get_files(dirname, patterns):
     files = []
     for root, _, fns in os.walk(dirname):
         for fn in fns:
             abs = os.path.abspath(os.path.join(root, fn))
-            files.append(abs)
+            if not patterns:
+                files.append(abs)
+                continue
+
+            for pattern in patterns:
+                if pattern and not re.search(pattern, abs):
+                    files.append(abs)
     return files
 
 
@@ -81,6 +96,7 @@ def main():
     parser.add_option('-h', action='callback', callback=usage)
     parser.add_option('-n', action='store_true', dest='dry_run')
     parser.add_option('-d', action='store_true', dest='empty')
+    parser.add_option('-e', dest='patterns_file', default=None)
     parser.add_option('-q', action='store_true', dest='quiet')
     options, args = parser.parse_args()
 
@@ -96,7 +112,13 @@ def main():
     if not all([os.path.isdir(src), os.path.isdir(dest)]):
         return
 
-    files = get_files(src)
+    patterns = []
+    try:
+        patterns = open(options.patterns_file).readlines()
+    except IOError:
+        fail("Could not read file '%s'" % options.patterns_file)
+
+    files = get_files(src, patterns)
     if not files:
         return
 
@@ -108,7 +130,7 @@ def main():
             mkdirp(os.path.dirname(final))
             shutil.move(fn, final)
         if not options.quiet:
-            echo("New file: %s (%s)" % (final, unprefixed), options.dry_run)
+            echo("New file: %s" % final, options.dry_run)
 
     if not options.empty:
         return
