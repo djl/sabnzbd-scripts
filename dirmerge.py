@@ -62,6 +62,7 @@ def get_files(dirname, patterns):
                 continue
 
             for pattern in patterns:
+                pattern = pattern.strip()
                 if pattern and not re.search(pattern, abs):
                     files.append(abs)
     return files
