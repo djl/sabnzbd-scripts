@@ -16,13 +16,15 @@ except ImportError:
     import ConfigParser as configparser
 
 from guessit import guess_file_info
-from jinja2 import Template
+from jinja2 import Environment
 
 
 CONFIG_FILE = '/etc/guessit-renamer.conf'
 MOVIE_EXTENSIONS = ['mkv', 'avi', 'm4v', 'mp4']
 SUB_EXTENSIONS = ['idx', 'sub', 'srt']
 EXTENSIONS = MOVIE_EXTENSIONS + SUB_EXTENSIONS
+
+ENV = Environment(extensions=["jinja2.ext.do",])
 
 
 def echo(msg=''):
@@ -44,7 +46,7 @@ def fmt(tmpl, context):
     except IOError:
         fail('Could not read config file')
 
-    tmpl = Template(tmpl).render(**context)
+    tmpl = ENV.from_string(tmpl).render(**context)
     configstr = StringIO(tmpl)
     config = configparser.ConfigParser()
     config.readfp(configstr)
