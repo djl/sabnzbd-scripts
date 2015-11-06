@@ -17,6 +17,7 @@ except ImportError:
 
 from guessit import guess_file_info
 from jinja2 import Environment
+from jinja2.exceptions import UndefinedError
 
 
 CONFIG_FILE = '/etc/guessit-renamer.conf'
@@ -25,6 +26,35 @@ SUB_EXTENSIONS = ['idx', 'sub', 'srt']
 EXTENSIONS = MOVIE_EXTENSIONS + SUB_EXTENSIONS
 
 ENV = Environment(extensions=["jinja2.ext.do",])
+
+
+# custom jinja2 filters
+def pytitle(s):
+    """
+    The built-in "title" filter clobbers acronyms.
+
+    Jinja2:
+    >>> {{ "hello A.B.C"|title }}
+    'Hello A.b.c'
+
+    Python:
+    >>> 'Hello A.B.C'.title()
+    'Hello A.B.C'
+    """
+    try:
+        return s.title()
+    except UndefinedError:
+        return s
+
+ENV.filters['pytitle'] = pytitle
+
+
+def resub(s, p, r):
+    if not s:
+        s = ''
+    return re.sub(p, r, s)
+
+ENV.filters['resub'] = resub
 
 
 def echo(msg=''):
