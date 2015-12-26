@@ -31,6 +31,9 @@ ENV = Environment(extensions=["jinja2.ext.do",])
 # custom jinja2 filters
 def pytitle(s):
     """
+    Uses the titlecase module if available. Otherwise falls back to
+    string's title() method.
+
     The built-in "title" filter clobbers acronyms.
 
     Jinja2:
@@ -40,8 +43,15 @@ def pytitle(s):
     Python:
     >>> 'Hello A.B.C'.title()
     'Hello A.B.C'
+
+    Titlecase:
+    >>> from titlecase import titlecase
+    titlecase('Hello A.B.C')
     """
     try:
+        import titlecase
+        return titlecase.titlecase(s)
+    except ImportError:
         return s.title()
     except UndefinedError:
         return s
