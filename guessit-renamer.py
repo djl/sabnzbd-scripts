@@ -20,7 +20,10 @@ from jinja2 import Environment
 from jinja2.exceptions import UndefinedError
 
 
+# TODO allow setting config file via env var
+# TODO switch to something better than ini files. YAML/TOML?
 CONFIG_FILE = '/etc/guessit-renamer.conf'
+# TODO allow setting extensions via config file
 MOVIE_EXTENSIONS = ['mkv', 'avi', 'm4v', 'mp4']
 SUB_EXTENSIONS = ['idx', 'sub', 'srt']
 EXTENSIONS = MOVIE_EXTENSIONS + SUB_EXTENSIONS
