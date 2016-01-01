@@ -96,6 +96,15 @@ def fmt(tmpl, context):
     return config
 
 
+def check_required_fields(info, fields):
+    for field in fields:
+        print field
+        print info
+        if field not in info:
+            return False
+        return True
+
+
 def get_suitable_files(dirname):
     # Get the largest files for each extension
     files = {}
@@ -170,39 +179,56 @@ def main(job_dir, job_name, category):
     if not files:
         fail("No suitable files found")
 
+    # Sometimes either the job name or the file names are encoded
+    # garbage. First, check if the job name contains the info we need.
+    # If it doesn't, loop over each file and check those instead.
+    config = fmt(CONFIG_FILE, {})
+    fn_job = "{0}.mkv".format(job_name)
+
+    try:
+        category_type = config.get('types', category)
+    except configparser.NoSectionError, configparser.NoOptionError:
+        category_type = None
+
+    try:
+        guessit_config = dict(config.items('guessit'))
+    except configparser.NoSectionError:
+        guessit_config = {}
+
+    try:
+        fields = config.get('required_fields', category)
+        fields = fields.split(',')
+    except configparser.NoSectionError, configparser.NoOptionError:
+        fields = []
+
+    info = guess_file_info(os.path.basename(fn_job),
+                           type=category_type,
+                           **guessit_config)
+
+    if not check_required_fields(info, fields):
+        info = None
+        for fn in files:
+            fn_info = guess_file_info(os.path.basename(fn),
+                                      type=category_type,
+                                      **guessit_config)
+            if check_required_fields(fn_info, fields):
+                info = fn_info
+                break
+
+        if not info:
+            fail("Could not determine metadata for job: {0}".format(job_name))
+
+
+    # Parse the config a second time with the full metadata
+    config = fmt(CONFIG_FILE, info)
+
+    try:
+        dest = config.get('categories', category)
+    except configparser.NoSectionError, configparser.NoOptionError:
+        fail("No config for category: %s" % category)
+
+    # Move everything into place
     for fn in files:
-        # Sometimes the file name is encoded garbage but the job name
-        # is always correct. Use $JOB_NAME.$FILE_EXT as the file name
-        # instead so we get the correct data
-        fn_job = "%s.%s" % (job_name, os.path.splitext(fn)[-1])
-        info = guess_file_info(os.path.basename(fn_job))
-
-        # Parse the config file once so we can grab the category ->
-        # guessit mappings
-        config = fmt(CONFIG_FILE, {})
-
-        try:
-            category_type = config.get('types', category)
-        except configparser.NoSectionError, configparser.NoOptionError:
-            category_type = None
-
-        try:
-            guessit_config = dict(config.items('guessit'))
-        except configparser.NoSectionError:
-            guessit_config = {}
-
-        # Parse the config a second time with the correct info
-        # TODO split the category/types config into seperate files so
-        # guess_file_info only needs to be called once
-        info = guess_file_info(os.path.basename(fn_job), type=category_type,
-                               **guessit_config)
-        config = fmt(CONFIG_FILE, info)
-
-        try:
-            dest = config.get('categories', category)
-        except configparser.NoSectionError, configparser.NoOptionError:
-            fail("No config for category: %s" % category)
-
         dest = os.path.join(dest, get_unique_filename(dest))
         mkdirp(os.path.dirname(dest))
         shutil.move(fn, dest)
