@@ -98,8 +98,6 @@ def fmt(tmpl, context):
 
 def check_required_fields(info, fields):
     for field in fields:
-        print field
-        print info
         if field not in info:
             return False
         return True
