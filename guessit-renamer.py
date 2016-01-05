@@ -83,6 +83,8 @@ def fail(msg):
     sys.exit(1)
 
 
+# TODO read the file once and re-use it so we don't parse
+# it from disk each time
 def fmt(tmpl, context):
     try:
         tmpl = open(tmpl).read()
@@ -216,17 +218,18 @@ def main(job_dir, job_name, category):
         if not info:
             fail("Could not determine metadata for job: {0}".format(job_name))
 
-
-    # Parse the config a second time with the full metadata
-    config = fmt(CONFIG_FILE, info)
-
-    try:
-        dest = config.get('categories', category)
-    except configparser.NoSectionError, configparser.NoOptionError:
-        fail("No config for category: %s" % category)
-
-    # Move everything into place
+    # Begin moving everything into place
     for fn in files:
+        # Parse the config a second time with the full metadata for each
+        # file
+        info['extension'] = os.path.splitext(fn)[-1].strip('.')
+        config = fmt(CONFIG_FILE, info)
+
+        try:
+            dest = config.get('categories', category)
+        except configparser.NoSectionError, configparser.NoOptionError:
+            fail("No config for category: %s" % category)
+
         dest = os.path.join(dest, get_unique_filename(dest))
         mkdirp(os.path.dirname(dest))
         shutil.move(fn, dest)
