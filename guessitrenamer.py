@@ -16,19 +16,27 @@ except ImportError:
     import ConfigParser as configparser
 
 from guessit import guess_file_info
+
 from jinja2 import Environment
 from jinja2.exceptions import UndefinedError
 
 
-# TODO allow setting config file via env var
 # TODO switch to something better than ini files. YAML/TOML?
-CONFIG_FILE = '/etc/guessit-renamer.conf'
+CONFIG_FILE = os.environ.get('GUESSIT_RENAMER_CONFIG', '/etc/guessit-renamer.conf')
 # TODO allow setting extensions via config file
 MOVIE_EXTENSIONS = ['mkv', 'avi', 'm4v', 'mp4']
 SUB_EXTENSIONS = ['idx', 'sub', 'srt']
 EXTENSIONS = MOVIE_EXTENSIONS + SUB_EXTENSIONS
 
 ENV = Environment(extensions=["jinja2.ext.do",])
+
+
+class NoGuessitInfo(Exception):
+    pass
+
+
+class NoCategory(Exception):
+    pass
 
 
 # custom jinja2 filters
@@ -174,15 +182,12 @@ def mkdirp(path, mode=0755):
         os.chmod(path, mode)
 
 
-def main(job_dir, job_name, category):
+def files_to_rename(config_file, job_dir, job_name, category):
     files = get_suitable_files(job_dir)
     if not files:
-        fail("No suitable files found")
+        return {}
 
-    # Sometimes either the job name or the file names are encoded
-    # garbage. First, check if the job name contains the info we need.
-    # If it doesn't, loop over each file and check those instead.
-    config = fmt(CONFIG_FILE, {})
+    config = fmt(config_file, {})
     fn_job = "{0}.mkv".format(job_name)
 
     try:
@@ -201,6 +206,9 @@ def main(job_dir, job_name, category):
     except configparser.NoSectionError, configparser.NoOptionError:
         fields = []
 
+    # Sometimes either the job name or the file names are encoded
+    # garbage. First, check if the job name contains the info we need.
+    # If it doesn't, loop over each file and check those instead.
     info = guess_file_info(os.path.basename(fn_job),
                            type=category_type,
                            **guessit_config)
@@ -216,9 +224,10 @@ def main(job_dir, job_name, category):
                 break
 
         if not info:
-            fail("Could not determine metadata for job: {0}".format(job_name))
+            msg = "Could not determine metadata for job: {0}".format(job_name)
+            raise NoGuessitInfo(msg)
 
-    # Begin moving everything into place
+    ret = {}
     for fn in files:
         # Parse the config a second time with the full metadata for each
         # file
@@ -228,12 +237,31 @@ def main(job_dir, job_name, category):
         try:
             dest = config.get('categories', category)
         except configparser.NoSectionError, configparser.NoOptionError:
-            fail("No config for category: %s" % category)
+            raise NoCategory("No config for category: %s" % category)
 
         dest = os.path.join(dest, get_unique_filename(dest))
-        mkdirp(os.path.dirname(dest))
-        shutil.move(fn, dest)
-        echo("New file: %s (%s)" % (dest, os.path.basename(fn)))
+        ret[fn] = dest
+
+    return ret
+
+
+def renamer(config_file, job_dir, job_name, category):
+    main(job_dir, job_name, category, config_file)
+
+
+def main(job_dir, job_name, category, config_file=None):
+    if not config_file:
+        config_file = CONFIG_FILE
+
+    files = files_to_rename(CONFIG_FILE, job_dir, job_name, category)
+    if not files:
+        fail("No suitable files found")
+
+    # Begin moving everything into place
+    for from_, to_ in files.items():
+        mkdirp(os.path.dirname(to_))
+        shutil.move(from_, to_)
+        echo("New file: %s (%s)" % (to_, os.path.basename(from_)))
 
     # Remove the job directory
     shutil.rmtree(job_dir)
