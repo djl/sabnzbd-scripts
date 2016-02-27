@@ -58,6 +58,7 @@ def pytitle(s):
     Titlecase:
     >>> from titlecase import titlecase
     titlecase('Hello A.B.C')
+    'Hello A.B.C'
     """
     try:
         import titlecase
