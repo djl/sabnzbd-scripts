@@ -1,0 +1,57 @@
+# The series and year identified
+# e.g. "Archer 2009" or "House of Cards 2013"
+{% set seriesAndYear = series ~ (' ' + year|string if year else '') -%}
+
+# As above but with spaces replaced with dots
+{% set seriesAndYearDotted = seriesAndYear.replace(' ', '.') -%}
+
+# Zero-pad the season and episode numbers
+{% set seasonPadded = (season|string).zfill(2) -%}
+{% set episodeNumberPadded = (episodeNumber|string).zfill(2) -%}
+
+# Title and part. Spaces replaced with dots
+# e.g. "The.Godfather.Part.2"
+{% set titleAndPartDotted = (title ~ (' Part ' + part|string if part)).replace(' ', '.') -%}
+
+
+# The config for each category
+categories:
+  TV:
+    # The destination for the new file
+    path: "/var/media/tv/{{ seriesAndYear }}/Season {{ season }}/{{ seriesAndYearDotted }}.s{{ seasonPadded }}e{{ episodeNumberPadded }}.{{ container }}"
+
+    # A list of categories and which "type" guessit should use when
+    # extracting information.
+    # More information: http://guessit.readthedocs.org/en/latest/#main-properties
+    type: episode
+
+    # A list of file extensions to consider
+    # You must specify at least one file extension
+    extensions:
+      - mkv
+      - avi
+      - m4v
+      - mp4
+      - idx
+      - sub
+      - srt
+
+    # (Optional)
+    # A list of required guessit fields for each type.
+    # These fields must exist
+    required_fields:
+      - series
+    
+
+  Movies:
+    path: "var/media/movies/{{ titleAndPartDotted }}.{{ year }}.{{ container }}"
+    type: movie
+    required_fields:
+      - title
+
+# (Optional)
+# Configuration for guessit. Each key/value pair will # passed onto
+# guessit
+guessit:
+  # Disable country guessing
+  allowed_countries = ''

@@ -10,10 +10,7 @@ try:
 except ImportError:
     from io import StringIO
 
-try:
-    from configparser import ConfigParser, NoOptionError, NoSectionError
-except ImportError:
-    from ConfigParser import ConfigParser, NoOptionError, NoSectionError
+import yaml
 
 from guessit import guess_file_info
 
@@ -21,11 +18,7 @@ from jinja2 import Environment
 from jinja2.exceptions import UndefinedError
 
 
-# TODO switch to something better than ini files. YAML/TOML?
-# We need something to easily merge default and user-provided config
-CONFIG_FILE = os.environ.get('GUESSIT_RENAMER_CONFIG', '/etc/guessit-renamer.conf')
-EXTENSIONS = ['mkv', 'avi', 'm4v', 'mp4', 'idx', 'sub', 'srt']
-
+CONFIG_FILE = os.environ.get('GUESSIT_RENAMER_CONFIG', '/etc/guessit-renamer.yaml')
 ENV = Environment(extensions=["jinja2.ext.do",])
 
 
@@ -100,9 +93,7 @@ def fmt(tmpl, context):
 
     tmpl = ENV.from_string(tmpl).render(**context)
     configstr = StringIO(tmpl)
-    config = ConfigParser()
-    config.readfp(configstr)
-    return config
+    return yaml.safe_load(configstr)
 
 
 def check_required_fields(info, fields):
@@ -172,34 +163,19 @@ def mkdirp(path, mode=0755):
 
 
 def files_to_rename(config_file, job_dir, job_name, category):
-    config = fmt(config_file, {})
+    global_config = fmt(config_file, {})
     fn_job = "{0}.mkv".format(job_name)
 
-    try:
-        category_type = config.get('types', category)
-    except NoSectionError, NoOptionError:
-        category_type = None
-
-    try:
-        guessit_config = dict(config.items('guessit'))
-    except NoSectionError:
-        guessit_config = {}
-
-    try:
-        fields = config.get('required_fields', category)
-        fields = fields.split(',')
-    except NoSectionError, NoOptionError:
-        fields = []
-
-    try:
-        extensions = config.get('extensions', category)
-        extensions = [x.strip() for x in extensions.split(',')]
-    except NoSectionError, NoOptionError:
-        extensions = EXTENSIONS
+    config = global_config.get('categories', {}).get(category, {})
+    category_type = config.get('type', None)
+    fields = config.get('required_fields', [])
+    extensions = config.get('extensions', [])
 
     files = get_suitable_files(job_dir, extensions)
     if not files:
         return {}
+
+    guessit_config = global_config.get('guessit', {})
 
     # Sometimes either the job name or the file names are encoded
     # garbage. First, check if the job name contains the info we need.
@@ -227,12 +203,17 @@ def files_to_rename(config_file, job_dir, job_name, category):
         # Parse the config a second time with the full metadata for each
         # file
         info['extension'] = os.path.splitext(fn)[-1].strip('.')
-        config = fmt(CONFIG_FILE, info)
+        config = fmt(config_file, info)
 
         try:
-            dest = config.get('categories', category)
-        except NoSectionError, NoOptionError:
+            cat = config.get('categories').get(category)
+        except KeyError:
             raise NoCategory("No config for category: %s" % category)
+
+        try:
+            dest = cat.get('path')
+        except KeyError:
+            raise NoCategory("Missing 'path' for category: %s" % category)
 
         dest = os.path.join(dest, get_unique_filename(dest))
         ret[fn] = dest
