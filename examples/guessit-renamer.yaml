@@ -41,13 +41,27 @@ categories:
     # These fields must exist
     required_fields:
       - series
-    
+
+   # (Optional)
+
+   # A map of text substitutions and the field where they should be
+   # run. These are treated as (case-insensitive) regular expressions
+   replace:
+     # Replace only in the series name
+     series:
+       # Make sure 'The' is always capitalized
+       '^the': 'The'
+
+
 
   Movies:
     path: "var/media/movies/{{ titleAndPartDotted }}.{{ year }}.{{ container }}"
     type: movie
     required_fields:
       - title
+    replace:
+      title:
+        '^ufc(\s+)': 'UFC\\1'
 
 # (Optional)
 # Configuration for guessit. Each key/value pair will # passed onto

@@ -170,6 +170,7 @@ def files_to_rename(config_file, job_dir, job_name, category):
     category_type = config.get('type', None)
     fields = config.get('required_fields', [])
     extensions = config.get('extensions', [])
+    replace = config.get('replace', {})
 
     files = get_suitable_files(job_dir, extensions)
     if not files:
@@ -197,6 +198,14 @@ def files_to_rename(config_file, job_dir, job_name, category):
         if not info:
             msg = "Could not determine metadata for job: {0}".format(job_name)
             raise NoGuessitInfo(msg)
+
+    for field, regexes in replace.items():
+        value = info.get(field, None)
+        if value is None:
+            continue
+        for p, r in regexes.items():
+            value = re.sub(p, r, value, flags=re.I)
+        info[field] = value
 
     ret = {}
     for fn in files:
