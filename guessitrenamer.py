@@ -11,9 +11,9 @@ except ImportError:
     from io import StringIO
 
 try:
-    import configparser
+    from configparser import ConfigParser, NoOptionError, NoSectionError
 except ImportError:
-    import ConfigParser as configparser
+    from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
 from guessit import guess_file_info
 
@@ -22,11 +22,9 @@ from jinja2.exceptions import UndefinedError
 
 
 # TODO switch to something better than ini files. YAML/TOML?
+# We need something to easily merge default and user-provided config
 CONFIG_FILE = os.environ.get('GUESSIT_RENAMER_CONFIG', '/etc/guessit-renamer.conf')
-# TODO allow setting extensions via config file
-MOVIE_EXTENSIONS = ['mkv', 'avi', 'm4v', 'mp4']
-SUB_EXTENSIONS = ['idx', 'sub', 'srt']
-EXTENSIONS = MOVIE_EXTENSIONS + SUB_EXTENSIONS
+EXTENSIONS = ['mkv', 'avi', 'm4v', 'mp4', 'idx', 'sub', 'srt']
 
 ENV = Environment(extensions=["jinja2.ext.do",])
 
@@ -102,7 +100,7 @@ def fmt(tmpl, context):
 
     tmpl = ENV.from_string(tmpl).render(**context)
     configstr = StringIO(tmpl)
-    config = configparser.ConfigParser()
+    config = ConfigParser()
     config.readfp(configstr)
     return config
 
@@ -114,7 +112,7 @@ def check_required_fields(info, fields):
         return True
 
 
-def get_suitable_files(dirname):
+def get_suitable_files(dirname, extensions):
     # Get the largest files for each extension
     files = {}
     for root, _, fns in os.walk(dirname):
@@ -123,7 +121,7 @@ def get_suitable_files(dirname):
             size = os.path.getsize(abs)
             ext = fn.rsplit('.', 1)[-1].lower()
 
-            if ext not in EXTENSIONS:
+            if ext not in extensions:
                 continue
 
             if ext not in files.keys():
@@ -131,18 +129,8 @@ def get_suitable_files(dirname):
 
             files[ext].append((abs, size))
 
-    # On the off-chance that we have multiple movie extensions, pick
-    # the one we want
-    # TODO: what if one of the lesser wanted files is the largest?
-    for ext in MOVIE_EXTENSIONS:
-        if ext in files.keys():
-            unwanted = [e for e in MOVIE_EXTENSIONS if e != ext]
-            for ext in unwanted:
-                try:
-                    del files[ext]
-                except KeyError:
-                    pass
-
+    # On the off-chance that we have multiple files for each
+    # extension, pick the the largest
     results = []
     for ext, items in files.items():
         item = sorted(items, key=lambda tup: tup[1], reverse=True)[0][0]
@@ -184,28 +172,34 @@ def mkdirp(path, mode=0755):
 
 
 def files_to_rename(config_file, job_dir, job_name, category):
-    files = get_suitable_files(job_dir)
-    if not files:
-        return {}
-
     config = fmt(config_file, {})
     fn_job = "{0}.mkv".format(job_name)
 
     try:
         category_type = config.get('types', category)
-    except configparser.NoSectionError, configparser.NoOptionError:
+    except NoSectionError, NoOptionError:
         category_type = None
 
     try:
         guessit_config = dict(config.items('guessit'))
-    except configparser.NoSectionError:
+    except NoSectionError:
         guessit_config = {}
 
     try:
         fields = config.get('required_fields', category)
         fields = fields.split(',')
-    except configparser.NoSectionError, configparser.NoOptionError:
+    except NoSectionError, NoOptionError:
         fields = []
+
+    try:
+        extensions = config.get('extensions', category)
+        extensions = [x.strip() for x in extensions.split(',')]
+    except NoSectionError, NoOptionError:
+        extensions = EXTENSIONS
+
+    files = get_suitable_files(job_dir, extensions)
+    if not files:
+        return {}
 
     # Sometimes either the job name or the file names are encoded
     # garbage. First, check if the job name contains the info we need.
@@ -237,7 +231,7 @@ def files_to_rename(config_file, job_dir, job_name, category):
 
         try:
             dest = config.get('categories', category)
-        except configparser.NoSectionError, configparser.NoOptionError:
+        except NoSectionError, NoOptionError:
             raise NoCategory("No config for category: %s" % category)
 
         dest = os.path.join(dest, get_unique_filename(dest))
