@@ -238,7 +238,7 @@ def main(job_dir, job_name, category, config_file=None):
     if not config_file:
         config_file = CONFIG_FILE
 
-    files = files_to_rename(CONFIG_FILE, job_dir, job_name, category)
+    files = files_to_rename(config_file, job_dir, job_name, category)
     if not files:
         fail("No suitable files found")
 
