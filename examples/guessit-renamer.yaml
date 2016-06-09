@@ -55,7 +55,7 @@ categories:
 
 
   Movies:
-    path: "var/media/movies/{{ titleAndPartDotted }}.{{ year }}.{{ container }}"
+    path: "/var/media/movies/{{ titleAndPartDotted }}.{{ year }}.{{ container }}"
     type: movie
     required_fields:
       - title
@@ -64,8 +64,7 @@ categories:
         '^ufc(\s+)': 'UFC\\1'
 
 # (Optional)
-# Configuration for guessit. Each key/value pair will # passed onto
-# guessit
+# Configuration for guessit. Each key/value pair will passed to guessit
 guessit:
   # Disable country guessing
-  allowed_countries = ''
+  allowed_countries: ''
