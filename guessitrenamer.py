@@ -62,10 +62,13 @@ def pytitle(s):
 ENV.filters['pytitle'] = pytitle
 
 
-def resub(s, p, r):
+def resub(s, p, r, i=False):
     if not s:
         s = ''
-    return re.sub(p, r, s)
+    kwargs = {}
+    if i:
+        kwargs['flags'] = re.I
+    return re.sub(p, r, s, **kwargs)
 
 ENV.filters['resub'] = resub
 
